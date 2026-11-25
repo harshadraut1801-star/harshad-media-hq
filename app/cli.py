@@ -10,6 +10,11 @@ Commands:
   hq verify             re-hash every catalogued original; report changed/missing
   hq catalogue          print the summary and write cache/reports/catalogue.html
   hq render EDL.yaml    render a draft from an edit list into 05_EDITED_VIDEOS (Video Editor)
+  hq review             list content and where each piece is in the pipeline
+  hq submit ID [--version N]   put the latest render up for approval
+  hq approve ID         YOU approve: shows the privacy checklist, hashes the files, fills 07_READY_TO_PUBLISH
+  hq reject ID --note "what to change"
+  hq check ID           verify an approved package is unchanged (the publisher runs this)
 """
 from __future__ import annotations
 
@@ -196,6 +201,100 @@ def cmd_render(args) -> int:
     return 0
 
 
+def _series_for(s, content_id: str) -> str:
+    prefix = content_id.split("-", 1)[0]
+    for ser in s.settings.get("series", []):
+        if ser.get("code") == prefix:
+            return ser["name"]
+    raise ConfigError(f"No series with code '{prefix}' in settings.yaml")
+
+
+def cmd_review(args) -> int:
+    from app.orchestrator.approval import pending
+
+    s = load_settings(args.root)
+    rows = pending(_open_db(s))
+    if not rows:
+        print("No content yet. Render something with `hq render`, then `hq submit ID`.")
+    for r in rows:
+        print(f"{r['id']:<10} {r['state']:<17} {r['format']:<6} {r['title'] or ''}")
+    return 0
+
+
+def cmd_submit(args) -> int:
+    from app.orchestrator.approval import ApprovalError, human_actor, submit
+
+    s = load_settings(args.root)
+    try:
+        pkg = submit(s, _open_db(s), args.id, _series_for(s, args.id), args.version, actor=human_actor())
+    except ApprovalError as exc:
+        print(f"Cannot submit: {exc}", file=sys.stderr)
+        return 1
+    print(f"{args.id} is pending approval: {pkg.video.name}"
+          + (f", caption {pkg.caption.name}" if pkg.caption else ", no caption yet")
+          + (f", thumbnail {pkg.thumbnail.name}" if pkg.thumbnail else ", no thumbnail yet"))
+    return 0
+
+
+def cmd_approve(args) -> int:
+    from app.orchestrator.approval import ApprovalError, approve, find_package, human_actor
+
+    s = load_settings(args.root)
+    series = _series_for(s, args.id)
+    try:
+        pkg = find_package(s, args.id, series, args.version)
+    except ApprovalError as exc:
+        print(f"Cannot approve: {exc}", file=sys.stderr)
+        return 1
+    print(f"Approving {args.id}: {pkg.video.name}")
+    checklist = s.privacy.get("pre_publish_checklist", [])
+    ok = args.checklist_ok
+    if not ok:
+        if not sys.stdin.isatty():
+            print("Run this yourself in a terminal (it asks you to confirm the checklist), "
+                  "or pass --checklist-ok if you have checked it.", file=sys.stderr)
+            return 1
+        for item in checklist:
+            if input(f"  {item}? [y/N] ").strip().lower() != "y":
+                print("Not approved. Fix it, re-render, and try again.")
+                return 1
+        ok = input(f"Type {args.id} to approve: ").strip() == args.id
+        if not ok:
+            print("Not approved.")
+            return 1
+    try:
+        ready = approve(s, _open_db(s), args.id, series, actor=human_actor(), checklist_confirmed=ok,
+                        version=args.version, note=args.note)
+    except ApprovalError as exc:
+        print(f"Cannot approve: {exc}", file=sys.stderr)
+        return 1
+    print(f"Approved. Package: {ready}")
+    print("Nothing has been published. Publishing is a separate step that re-checks this approval.")
+    return 0
+
+
+def cmd_reject(args) -> int:
+    from app.orchestrator.approval import ApprovalError, human_actor, reject
+
+    s = load_settings(args.root)
+    try:
+        reject(s, _open_db(s), args.id, actor=human_actor(), note=args.note)
+    except ApprovalError as exc:
+        print(f"Cannot reject: {exc}", file=sys.stderr)
+        return 1
+    print(f"{args.id} rejected. Note saved: {args.note}")
+    return 0
+
+
+def cmd_check(args) -> int:
+    from app.orchestrator.approval import check
+
+    s = load_settings(args.root)
+    ok, msg = check(s, _open_db(s), args.id)
+    print(("OK: " if ok else "NOT OK: ") + msg)
+    return 0 if ok else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hq", description="Harshad Media HQ")
     parser.add_argument("--root", help="project root (default: search upward from cwd)")
@@ -217,6 +316,24 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("edl", help="path to edl.yaml (absolute, or relative to cwd or MEDIA_ROOT)")
     r.add_argument("--keep-tmp", action="store_true", help="keep intermediate files in cache/tmp")
     r.set_defaults(func=cmd_render)
+    sub.add_parser("review", help="list content and states").set_defaults(func=cmd_review)
+    sm = sub.add_parser("submit", help="put latest render up for approval")
+    sm.add_argument("id")
+    sm.add_argument("--version", type=int)
+    sm.set_defaults(func=cmd_submit)
+    ap = sub.add_parser("approve", help="approve content (you only)")
+    ap.add_argument("id")
+    ap.add_argument("--version", type=int)
+    ap.add_argument("--note")
+    ap.add_argument("--checklist-ok", action="store_true", help="skip the interactive checklist (you checked it)")
+    ap.set_defaults(func=cmd_approve)
+    rj = sub.add_parser("reject", help="reject with a note")
+    rj.add_argument("id")
+    rj.add_argument("--note", required=True)
+    rj.set_defaults(func=cmd_reject)
+    ck = sub.add_parser("check", help="verify an approval is still valid")
+    ck.add_argument("id")
+    ck.set_defaults(func=cmd_check)
     return parser
 
 
