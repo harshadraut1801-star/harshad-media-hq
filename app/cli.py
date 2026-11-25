@@ -5,6 +5,10 @@ Commands:
   hq status             show paths, schema version and counts
   hq doctor             check Python, FFmpeg/ffprobe, config, folders, .env hygiene
   hq classify PATH...   show the privacy class a media path would get
+  hq scan [--path SUB] [--proxies] [--no-thumbs]
+                        catalogue 01_RAW_MEDIA read-only (Media Librarian)
+  hq verify             re-hash every catalogued original; report changed/missing
+  hq catalogue          print the summary and write cache/reports/catalogue.html
 """
 from __future__ import annotations
 
@@ -114,6 +118,61 @@ def cmd_classify(args) -> int:
     return 0
 
 
+def _open_db(s):
+    conn = connect(s)
+    migrate(s, conn)
+    return conn
+
+
+def cmd_scan(args) -> int:
+    from app.agents.media_librarian import scan
+    from app.agents.media_librarian.report import console_summary, summarise, write_html
+    from app.core.logging import setup_logging
+
+    s = load_settings(args.root)
+    setup_logging(s)
+    conn = _open_db(s)
+    res = scan(s, conn, subpath=args.path, proxies=args.proxies, thumbnails=not args.no_thumbs)
+    print(f"Added {len(res.added)}, unchanged {res.unchanged}, duplicates {len(res.duplicates)}, "
+          f"skipped {len(res.skipped)}, errors {len(res.errors)}")
+    for rel, why in res.skipped:
+        print(f"  skipped: {rel} ({why})")
+    for rel, orig in res.duplicates:
+        print(f"  duplicate: {rel} = {orig}")
+    for rel in res.changed:
+        print(f"  !! ORIGINAL CHANGED: {rel}")
+    for rel in res.missing:
+        print(f"  !! MISSING: {rel}")
+    for rel, err in res.errors:
+        print(f"  error: {rel}: {err}")
+    summary = summarise(conn)
+    print(console_summary(summary))
+    print(f"Report: {write_html(s, summary)}")
+    return 1 if (res.changed or res.errors) else 0
+
+
+def cmd_verify(args) -> int:
+    from app.agents.media_librarian import verify
+
+    s = load_settings(args.root)
+    out = verify(s, _open_db(s))
+    print(f"ok {len(out['ok'])}, changed {len(out['changed'])}, missing {len(out['missing'])}")
+    for k in ("changed", "missing"):
+        for rel in out[k]:
+            print(f"  !! {k.upper()}: {rel}")
+    return 0 if not (out["changed"] or out["missing"]) else 1
+
+
+def cmd_catalogue(args) -> int:
+    from app.agents.media_librarian.report import console_summary, summarise, write_html
+
+    s = load_settings(args.root)
+    summary = summarise(_open_db(s))
+    print(console_summary(summary))
+    print(f"Report: {write_html(s, summary)}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hq", description="Harshad Media HQ")
     parser.add_argument("--root", help="project root (default: search upward from cwd)")
@@ -124,6 +183,13 @@ def build_parser() -> argparse.ArgumentParser:
     c = sub.add_parser("classify", help="privacy class of media paths")
     c.add_argument("paths", nargs="+")
     c.set_defaults(func=cmd_classify)
+    sc = sub.add_parser("scan", help="catalogue raw media (read-only)")
+    sc.add_argument("--path", help="subfolder of 01_RAW_MEDIA, e.g. 'Jaipur Diaries/Day 01 - Aurangabad to Indore'")
+    sc.add_argument("--proxies", action="store_true", help="also make 540p proxies (slow)")
+    sc.add_argument("--no-thumbs", action="store_true", help="skip thumbnails")
+    sc.set_defaults(func=cmd_scan)
+    sub.add_parser("verify", help="re-hash originals").set_defaults(func=cmd_verify)
+    sub.add_parser("catalogue", help="summary + HTML report").set_defaults(func=cmd_catalogue)
     return parser
 
 

@@ -75,6 +75,8 @@ Filing inside stages 02–08: `<Series>/<content_id>/`. Content IDs: `JD-R-###` 
 - Files carry **GPS coordinates** and device data. Catalogue them internally (useful for day/place grouping), strip them on every export.
 - Typical clip lengths 10/20/30/45 s: the editor works in segments, not whole clips.
 
+**Measured on real Day 01 footage (25 Nov 2026):** video is H.264 High, AAC 48 kHz stereo, stored at **2336×1080** (the phone's 19.5:9 mode) or 1920×1080, with display rotation −90 for portrait. Several clips are variable frame rate (average 28–29.9 fps against 30 nominal). Clip lengths ran from 0.8 s to 56 s, not only 10–45 s. Photos are 4000×1848 JPEG with EXIF Orientation 6. GPS was **not** present in the sampled files (location tagging appears off), which is good for privacy; the librarian still checks every file. 2336×1080 is wider than 16:9, so long-form exports need a crop or pad decision, and 9:16 Reels crop about 15% off each long edge.
+
 ## 5. Content lifecycle (state machine)
 
 ```
