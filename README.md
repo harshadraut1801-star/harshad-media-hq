@@ -3,7 +3,7 @@
 AI-assisted travel content studio: raw phone footage in, approved Reels, Shorts and YouTube videos out.
 Human approval at every public step.
 
-**Status:** Foundation, task 1 (core plumbing) and task 2 (Media Librarian v1: `hq scan`, `hq verify`, `hq catalogue`). Other agents not implemented yet.
+**Status:** Foundation, task 1 (core plumbing) task 2 (Media Librarian v1: `hq scan`, `hq verify`, `hq catalogue`) and task 3 (Video Editor v1: `hq render` from an edit list; first draft JD-R-001). Other agents not implemented yet.
 
 ## Quick map
 

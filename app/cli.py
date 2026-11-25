@@ -9,6 +9,7 @@ Commands:
                         catalogue 01_RAW_MEDIA read-only (Media Librarian)
   hq verify             re-hash every catalogued original; report changed/missing
   hq catalogue          print the summary and write cache/reports/catalogue.html
+  hq render EDL.yaml    render a draft from an edit list into 05_EDITED_VIDEOS (Video Editor)
 """
 from __future__ import annotations
 
@@ -173,6 +174,28 @@ def cmd_catalogue(args) -> int:
     return 0
 
 
+def cmd_render(args) -> int:
+    from app.agents.video_editor import load_edl, render
+    from app.agents.video_editor.edl import EDLError
+    from app.agents.video_editor.render import RenderError
+    from app.core.logging import setup_logging
+
+    s = load_settings(args.root)
+    setup_logging(s)
+    edl_path = Path(args.edl)
+    if not edl_path.is_absolute() and not edl_path.exists():
+        edl_path = s.media_root / edl_path
+    try:
+        edl = load_edl(edl_path)
+        res = render(s, _open_db(s), edl, keep_tmp=args.keep_tmp)
+    except (EDLError, RenderError) as exc:
+        print(f"Render failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Rendered {res.video} ({res.duration_s:.1f}s)")
+    print(f"Review page: {res.review}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hq", description="Harshad Media HQ")
     parser.add_argument("--root", help="project root (default: search upward from cwd)")
@@ -190,6 +213,10 @@ def build_parser() -> argparse.ArgumentParser:
     sc.set_defaults(func=cmd_scan)
     sub.add_parser("verify", help="re-hash originals").set_defaults(func=cmd_verify)
     sub.add_parser("catalogue", help="summary + HTML report").set_defaults(func=cmd_catalogue)
+    r = sub.add_parser("render", help="render a draft from an EDL")
+    r.add_argument("edl", help="path to edl.yaml (absolute, or relative to cwd or MEDIA_ROOT)")
+    r.add_argument("--keep-tmp", action="store_true", help="keep intermediate files in cache/tmp")
+    r.set_defaults(func=cmd_render)
     return parser
 
 
