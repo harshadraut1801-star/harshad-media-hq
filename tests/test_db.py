@@ -4,8 +4,8 @@ from app.db import connect, migrate, schema_version
 
 def test_migrate_creates_schema_and_is_idempotent(settings):
     conn = connect(settings)
-    assert migrate(settings, conn) == ["0001_init.sql"]
-    assert schema_version(conn) == 1
+    assert migrate(settings, conn) == ["0001_init.sql", "0002_librarian.sql"]
+    assert schema_version(conn) == 2
     assert migrate(settings, conn) == []
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     for t in ("media", "content", "assets", "approvals", "posts", "metrics", "jobs", "llm_calls", "events"):

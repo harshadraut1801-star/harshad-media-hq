@@ -5,6 +5,7 @@ reel:
   fps: 30
   vcodec: libx264
   crf: 20
+  maxrate: 6M            # caps size (~45 MB/min); Instagram re-encodes above this anyway
   max_duration_s: 90
   audio: { codec: aac, bitrate: 192k, loudness_lufs: -14 }
 short:
@@ -13,6 +14,7 @@ short:
   fps: 30
   vcodec: libx264
   crf: 20
+  maxrate: 6M
   max_duration_s: 60     # verify current YouTube Shorts limit when building
   audio: { codec: aac, bitrate: 192k, loudness_lufs: -14 }
 long:
@@ -26,3 +28,12 @@ reframe:
   landscape_to_portrait: blur_pad   # blur_pad | center_crop | smart_crop (later)
   portrait_to_landscape: blur_pad
 hdr_to_sdr: tonemap_hable
+captions:
+  font: Arial            # any installed font; Windows has Arial
+  size: 64               # at 1080x1920
+  margin_bottom: 420     # keeps text above Instagram/YouTube UI at the bottom
+  outline: 4
+segment_fade_s: 0.2      # quick dip at each cut; 0 disables
+photo_default_s: 2.5
+photo_zoom: 1.08         # gentle Ken Burns end zoom
+ambient_lufs: -20        # loudness when the only sound is clip ambience (no voice/music)

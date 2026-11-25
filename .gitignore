@@ -17,6 +17,7 @@ db/secrets/
 !0*/**/.gitkeep
 !0*/**/README.md
 !0*/**/.confidential
+!02_SELECTED_FOOTAGE/**/edl.yaml
 
 # Runtime
 db/*.sqlite3*

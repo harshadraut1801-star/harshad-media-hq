@@ -5,4 +5,6 @@
 **Layout:** `<Series>/<content_id>/` e.g. `Jaipur Diaries/JD-R-003/`
 **Rebuildable:** Yes, from 01_RAW_MEDIA + the recipe in the database.
 
+Each content folder holds `edl.yaml`, the edit list `hq render` reads (format in `app/agents/video_editor/edl.py`).
+
 See `docs/ARCHITECTURE.md` §4.

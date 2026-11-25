@@ -8,7 +8,7 @@ def test_init_then_status(project, capsys):
     assert (project / "02_SELECTED_FOOTAGE").is_dir()
     assert main(["--root", str(project), "status"]) == 0
     out = capsys.readouterr().out
-    assert "schema v1" in out and "paid AI calls blocked" in out
+    assert "schema v2" in out and "paid AI calls blocked" in out
 
 
 def test_classify(project, capsys):
