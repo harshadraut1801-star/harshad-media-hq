@@ -188,7 +188,7 @@ Rules defined in `config/privacy.yaml`. Additional checks before publish: GPS/de
 9. Growth Analyst: metrics pull + weekly report.
 10. Long-form YouTube assembly, thumbnails generation, archive footage reuse.
 
-Actual order so far (2026-11-25): 1, 2, 3, then the approval flow (CLI part of 6), then privacy blur (plate boxes, face blur, `hq privacy-scan`; ADR 0002) because the AI budget is held at $0. Storyteller and TTS wait for a budget.
+Actual order so far (2026-11-25): 1, 2, 3, then the approval flow (CLI part of 6), then privacy blur (plate boxes, face blur, `hq privacy-scan`; ADR 0002) because the AI budget is held at $0, then the cover/thumbnail maker (`hq covers`, `hq cover`). Storyteller and TTS wait for a budget.
 
 ## 11. Open questions for Harsh
 

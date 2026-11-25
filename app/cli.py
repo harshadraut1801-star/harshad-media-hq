@@ -311,6 +311,54 @@ def cmd_privacy_scan(args) -> int:
     return 0
 
 
+def _latest_video(s, content_id: str, version: int | None) -> Path:
+    from app.orchestrator.approval import ApprovalError, find_package
+
+    try:
+        return find_package(s, content_id, _series_for(s, content_id), version).video
+    except ApprovalError as exc:
+        raise SystemExit(f"{exc}") from exc
+
+
+def cmd_covers(args) -> int:
+    from app.agents.video_editor.cover import CoverError, candidates
+
+    s = load_settings(args.root)
+    video = _latest_video(s, args.id, args.version)
+    try:
+        report, cands = candidates(s, video, _series_for(s, args.id), args.id, n=args.n, conn=_open_db(s))
+    except CoverError as exc:
+        print(f"Cannot pick covers: {exc}", file=sys.stderr)
+        return 1
+    print(f"{len(cands)} candidates from {video.name}. Best: " +
+          ", ".join(f"{c.t:.2f}s ({c.score})" for c in cands[:3]))
+    print(f"Open: {report}")
+    return 0
+
+
+def cmd_cover(args) -> int:
+    from app.agents.video_editor.cover import CoverError, make_cover
+
+    s = load_settings(args.root)
+    video = _latest_video(s, args.id, args.version)
+    fmt = args.format
+    if fmt is None:
+        conn = _open_db(s)
+        row = conn.execute("SELECT format FROM content WHERE id=?", (args.id,)).fetchone()
+        fmt = row["format"] if row else "reel"
+    else:
+        conn = _open_db(s)
+    try:
+        res = make_cover(s, video, _series_for(s, args.id), args.id, t=args.t, title=args.title,
+                         subtitle=args.subtitle, fmt=fmt, conn=conn)
+    except CoverError as exc:
+        print(f"Cannot make cover: {exc}", file=sys.stderr)
+        return 1
+    print(f"Cover v{res.version}: {res.cover}")
+    print(f"thumbnail.jpg updated (used by hq submit/approve). Grid crop preview: {res.grid_preview}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hq", description="Harshad Media HQ")
     parser.add_argument("--root", help="project root (default: search upward from cwd)")
@@ -353,6 +401,19 @@ def build_parser() -> argparse.ArgumentParser:
     ps = sub.add_parser("privacy-scan", help="frame grid with detected faces")
     ps.add_argument("video")
     ps.set_defaults(func=cmd_privacy_scan)
+    cv = sub.add_parser("covers", help="pick cover/thumbnail candidate frames from the latest render")
+    cv.add_argument("id")
+    cv.add_argument("--version", type=int)
+    cv.add_argument("--n", type=int, default=12)
+    cv.set_defaults(func=cmd_covers)
+    co = sub.add_parser("cover", help="make the cover/thumbnail from one frame + your title")
+    co.add_argument("id")
+    co.add_argument("--t", type=float, required=True, help="frame time in seconds (from hq covers)")
+    co.add_argument("--title", required=True, help="your words; nothing is invented")
+    co.add_argument("--subtitle")
+    co.add_argument("--format", choices=["reel", "short", "long"])
+    co.add_argument("--version", type=int)
+    co.set_defaults(func=cmd_cover)
     return parser
 
 

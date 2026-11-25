@@ -23,11 +23,13 @@ segments:
     in: 24.0
     out: 28.0
     focus_x: 0.5
-  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_131908.mp4      # MP border sign gantry; after 2 s windscreen stickers show a reg. number
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_131908.mp4      # MP border sign gantry; from ~1.0 s our windscreen stickers (reg. number) show at the top
     in: 0.0
     out: 2.0
     focus_x: 0.55
     caption: "MP border ahead"
+    blur:                            # our own car's windscreen stickers (registration number), top of frame
+      - {x: 0.0, y: 0.0, w: 1.0, h: 0.15}
   - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_130204.jpg      # painted truck
     duration: 2.0
     caption: "Truck art on the highway"

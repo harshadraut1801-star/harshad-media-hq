@@ -37,3 +37,5 @@ segment_fade_s: 0.2      # quick dip at each cut; 0 disables
 photo_default_s: 2.5
 photo_zoom: 1.08         # gentle Ken Burns end zoom
 ambient_lufs: -20        # loudness when the only sound is clip ambience (no voice/music)
+cover:
+  font: arialbd.ttf      # bold font for cover/thumbnail titles; Windows has Arial Bold. Falls back to DejaVu Sans Bold.
