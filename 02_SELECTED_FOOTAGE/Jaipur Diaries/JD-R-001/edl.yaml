@@ -31,8 +31,12 @@ segments:
   - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_130204.jpg      # painted truck
     duration: 2.0
     caption: "Truck art on the highway"
+    blur:                            # truck registration plate
+      - {x: 0.62, y: 0.555, w: 0.20, h: 0.065}
   - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_143923.jpg      # orange truck ahead
     duration: 2.0
+    blur:                            # truck registration plate
+      - {x: 0.50, y: 0.585, w: 0.18, h: 0.10}
   - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_132414.mp4      # roadside, landscape
     in: 6.0
     out: 9.5
