@@ -5,6 +5,7 @@ reel:
   fps: 30
   vcodec: libx264
   crf: 20
+  maxrate: 6M            # caps size (~45 MB/min); Instagram re-encodes above this anyway
   max_duration_s: 90
   audio: { codec: aac, bitrate: 192k, loudness_lufs: -14 }
 short:
@@ -13,6 +14,7 @@ short:
   fps: 30
   vcodec: libx264
   crf: 20
+  maxrate: 6M
   max_duration_s: 60     # verify current YouTube Shorts limit when building
   audio: { codec: aac, bitrate: 192k, loudness_lufs: -14 }
 long:

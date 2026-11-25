@@ -220,8 +220,9 @@ def render(settings: Settings, conn, edl: EDL, *, keep_tmp: bool = False) -> Ren
                   f"measured_thresh={stats['input_thresh']}:offset={stats['target_offset']}:linear=true,"
                   f"aresample=48000")
     a = p.get("audio", {})
+    rate = ["-maxrate", str(p["maxrate"]), "-bufsize", str(p.get("bufsize", "12M"))] if p.get("maxrate") else []
     _run([ff, "-v", "error", "-y", "-i", joined.name, "-vf", vf, "-af", af,
-          "-c:v", p.get("vcodec", "libx264"), "-preset", "medium", "-crf", str(p.get("crf", 20)),
+          "-c:v", p.get("vcodec", "libx264"), "-preset", "medium", "-crf", str(p.get("crf", 20)), *rate,
           "-profile:v", "high", "-pix_fmt", "yuv420p", "-r", str(FPS),
           "-c:a", a.get("codec", "aac"), "-b:a", a.get("bitrate", "192k"), "-ar", "48000",
           "-map_metadata", "-1", "-map_chapters", "-1", "-movflags", "+faststart", str(final)], cmds, cwd=tmp)
