@@ -90,7 +90,7 @@ def _blur_boxes_chain(label: str, boxes: list[dict], w: int, h: int) -> tuple[st
         bx, by = int(b["x"] * w), int(b["y"] * h)
         end = f"{b['to']}" if b.get("to") is not None else "1e9"
         chain += (f";[{cur}]split[m{n}a][m{n}b];[m{n}b]crop={bw}:{bh}:{bx}:{by},"
-                  f"scale=w=trunc(iw/12)+2:h=trunc(ih/12)+2,scale={bw}:{bh}:flags=neighbor,boxblur=4:1[m{n}c];"
+                  f"scale=w=trunc(iw/28)+2:h=trunc(ih/28)+2,scale={bw}:{bh}:flags=neighbor,boxblur=10:2[m{n}c];"
                   f"[m{n}a][m{n}c]overlay={bx}:{by}:enable='between(t,{b['from']},{end})'[mb{n}]")
         cur = f"mb{n}"
     return chain, cur

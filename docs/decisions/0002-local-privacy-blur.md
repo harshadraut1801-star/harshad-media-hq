@@ -10,7 +10,7 @@ Public Reels must not show vehicle number plates, children's faces without conse
 
 ## Decision
 - Faces: YuNet, offline, model file committed in `models/`. Off by default; `blur_faces: true` per EDL or per segment. Whether family faces are shown is a per-piece human decision.
-- Plates and other text: manual boxes in the EDL (`blur:`), source-frame fractions with optional time range.
+- Plates and other text: manual boxes in the EDL (`blur:`), fractions of the output frame, with optional time range.
 - Safety net: `hq privacy-scan` frame grid, checked by eye before `hq submit`.
 - opencv-python-headless pinned below 5 (5.x drops the bundled cascades and changed APIs).
 
