@@ -1,0 +1,49 @@
+# JD-R-001 draft 1, picked by Claude from the Day 01 catalogue. Edit freely and run:
+#   hq render "02_SELECTED_FOOTAGE/Jaipur Diaries/JD-R-001/edl.yaml"
+# Left out on purpose: 20261124_120951.jpg (number plate readable), driving-selfie and
+# dashboard clips, and the 0.8 s clip. Trims also avoid readable number plates.
+content_id: JD-R-001
+series: Jaipur Diaries
+format: reel
+title: "Day 01: Aurangabad to Indore"
+audio: ambient          # no music or voice yet; road sound kept low (-20 LUFS)
+segments:
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_124826.mp4      # open road ahead, portrait
+    in: 0.5
+    out: 4.0
+    caption: "Jaipur Diaries · Day 01"
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_093306.jpg      # breakfast plate
+    duration: 2.2
+    caption: "Breakfast first"
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_131944.mp4      # highway, portrait
+    in: 1.0
+    out: 5.0
+    caption: "Aurangabad to Indore"
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_131724.mp4      # roadside trees, landscape
+    in: 24.0
+    out: 28.0
+    focus_x: 0.5
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_131908.mp4      # MP border sign gantry; after 2 s windscreen stickers show a reg. number
+    in: 0.0
+    out: 2.0
+    focus_x: 0.55
+    caption: "MP border ahead"
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_130204.jpg      # painted truck
+    duration: 2.0
+    caption: "Truck art on the highway"
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_143923.jpg      # orange truck ahead
+    duration: 2.0
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_132414.mp4      # roadside, landscape
+    in: 6.0
+    out: 9.5
+    focus_x: 0.5
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_134618.jpg      # lunch plate (landscape photo)
+    duration: 2.2
+    caption: "Lunch break"
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_141431.jpg      # couple photo at the stop (family_private: your call)
+    duration: 2.5
+  - src: 01_RAW_MEDIA/Jaipur Diaries/Day 01 - Aurangabad to Indore/20261125_154245.mp4      # highway stop; after ~12 s a parked car's plate is readable
+    in: 0.5
+    out: 4.0
+    focus_x: 0.5
+    caption: "More tomorrow"
