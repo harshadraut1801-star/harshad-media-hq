@@ -1,0 +1,23 @@
+# Privacy classes: public_ok | family_private | confidential
+default_class: family_private
+confidential_paths:
+  - "01_RAW_MEDIA/Jaipur Diaries/Customer Visit - FNEI"
+confidential_marker_file: .confidential   # any folder containing this is confidential
+rules:
+  confidential:
+    send_to_external_ai: false
+    publishable: false
+  family_private:
+    send_to_external_ai: true      # sampled frames / transcripts only
+    send_faces_to_external_ai: false
+    publishable: false             # until marked public_ok per content piece
+  public_ok:
+    send_to_external_ai: true
+    publishable: true              # still requires approval
+export:
+  strip_metadata: true             # GPS, device model, timestamps
+pre_publish_checklist:
+  - No customer name, logo, plant interior, part or drawing visible or mentioned
+  - No vehicle number plates, hotel room numbers or home location
+  - Children's faces OK'd by Harsh for this piece
+  - Location is not live (family has left)

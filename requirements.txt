@@ -1,0 +1,4 @@
+# Foundation only. Each component adds its deps in the change that introduces it.
+pyyaml>=6.0
+python-dotenv>=1.0
+pytest>=8.0

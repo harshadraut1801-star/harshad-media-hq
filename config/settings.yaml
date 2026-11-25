@@ -1,0 +1,25 @@
+# General settings. Paths are relative to MEDIA_ROOT (from .env).
+project_name: Harshad Media HQ
+timezone: Asia/Kolkata
+paths:
+  raw_media: 01_RAW_MEDIA          # READ-ONLY to code
+  selected: 02_SELECTED_FOOTAGE
+  scripts: 03_AI_SCRIPTS
+  voiceovers: 04_VOICEOVERS
+  edited: 05_EDITED_VIDEOS
+  thumbnails: 06_THUMBNAILS
+  ready: 07_READY_TO_PUBLISH
+  published: 08_PUBLISHED_CONTENT
+  database: db/hq.sqlite3
+  cache: cache
+  logs: logs
+series:
+  - code: JD
+    name: Jaipur Diaries
+    raw_folder: "Jaipur Diaries"
+budget:
+  monthly_budget_usd: 0     # 0 = paid AI calls blocked until Harsh sets a cap
+  warn_at_percent: 75
+publishing:
+  require_approval: true    # fixed; publisher ignores any attempt to set false
+  post_after_leaving_location: true

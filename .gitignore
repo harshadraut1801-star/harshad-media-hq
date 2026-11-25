@@ -1,0 +1,32 @@
+# Secrets
+.env
+*.env
+!.env.example
+db/secrets/
+
+# Media (never in git) — keep folder skeleton only
+01_RAW_MEDIA/**
+02_SELECTED_FOOTAGE/**
+03_AI_SCRIPTS/**
+04_VOICEOVERS/**
+05_EDITED_VIDEOS/**
+06_THUMBNAILS/**
+07_READY_TO_PUBLISH/**
+08_PUBLISHED_CONTENT/**
+!0*/**/
+!0*/**/.gitkeep
+!0*/**/README.md
+!0*/**/.confidential
+
+# Runtime
+db/*.sqlite3*
+cache/**
+!cache/**/.gitkeep
+logs/**
+!logs/.gitkeep
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,0 +1,28 @@
+# FFmpeg export presets. Loudness target per platform norms (approx.).
+reel:
+  width: 1080
+  height: 1920
+  fps: 30
+  vcodec: libx264
+  crf: 20
+  max_duration_s: 90
+  audio: { codec: aac, bitrate: 192k, loudness_lufs: -14 }
+short:
+  width: 1080
+  height: 1920
+  fps: 30
+  vcodec: libx264
+  crf: 20
+  max_duration_s: 60     # verify current YouTube Shorts limit when building
+  audio: { codec: aac, bitrate: 192k, loudness_lufs: -14 }
+long:
+  width: 1920
+  height: 1080
+  fps: 30
+  vcodec: libx264
+  crf: 19
+  audio: { codec: aac, bitrate: 256k, loudness_lufs: -14 }
+reframe:
+  landscape_to_portrait: blur_pad   # blur_pad | center_crop | smart_crop (later)
+  portrait_to_landscape: blur_pad
+hdr_to_sdr: tonemap_hable
