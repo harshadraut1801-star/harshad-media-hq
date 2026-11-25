@@ -3,7 +3,7 @@
 AI-assisted travel content studio: raw phone footage in, approved Reels, Shorts and YouTube videos out.
 Human approval at every public step.
 
-**Status:** Foundation + task 1 (core plumbing: config, raw-media write guard, privacy classes, SQLite migrations, `hq` CLI, provider guards). No agents implemented yet.
+**Status:** Foundation, task 1 (core plumbing) and task 2 (Media Librarian v1: `hq scan`, `hq verify`, `hq catalogue`). Other agents not implemented yet.
 
 ## Quick map
 
