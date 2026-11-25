@@ -3,7 +3,7 @@
 AI-assisted travel content studio: raw phone footage in, approved Reels, Shorts and YouTube videos out.
 Human approval at every public step.
 
-**Status:** Foundation (structure, rules, architecture). No agents implemented yet.
+**Status:** Foundation + task 1 (core plumbing: config, raw-media write guard, privacy classes, SQLite migrations, `hq` CLI, provider guards). No agents implemented yet.
 
 ## Quick map
 
@@ -63,13 +63,21 @@ The numbered folders are the **production line**: a piece of content moves left 
 
 Full design: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## Setup (when the first component lands)
+## Setup (Windows)
 
-1. Install Python 3.11+, FFmpeg (includes ffprobe) and, later, n8n self-hosted (free; n8n Cloud is a paid plan and needs approval).
-2. `python -m venv .venv` and `pip install -r requirements.txt`
-3. Copy `.env.example` to `.env` and fill in only the keys needed for the current task.
-4. Set `MEDIA_ROOT` in `.env` to this folder's location on your PC.
-5. Drop phone media into the right `01_RAW_MEDIA/` day folder. Don't rename the files; the system tracks them by hash.
+1. Install Python 3.11+ and FFmpeg (includes ffprobe; add its `bin` folder to PATH). n8n comes later, self-hosted (free; n8n Cloud is a paid plan and needs approval).
+2. In this folder:
+   ```
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install -e .[dev]
+   ```
+3. Copy `.env.example` to `.env`. Leave keys empty until a task needs them. Remove the `MEDIA_ROOT` line if media sits in this same folder.
+4. `hq doctor` checks Python, FFmpeg, folders and `.env` hygiene.
+5. `hq init` creates the database (`db/hq.sqlite3`) and any missing stage folders.
+6. `hq status` shows paths, budget and counts. `hq classify <path>` shows the privacy class a file would get.
+7. `pytest` runs the test suite.
+8. Drop phone media into the right `01_RAW_MEDIA/` day folder. Don't rename the files; the system tracks them by hash.
 
 ## Rules in one breath
 

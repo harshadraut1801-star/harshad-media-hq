@@ -1,0 +1,18 @@
+[project]
+name = "harshad-media-hq"
+version = "0.1.0"
+description = "AI-assisted travel content production system"
+requires-python = ">=3.11"
+dependencies = ["pyyaml>=6.0", "python-dotenv>=1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+hq = "app.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
