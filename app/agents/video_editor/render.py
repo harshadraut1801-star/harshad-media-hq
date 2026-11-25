@@ -82,6 +82,20 @@ def _frame_chain(mode: str, w: int, h: int, focus_x: float) -> str:
             f"[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1[v0]")
 
 
+def _blur_boxes_chain(label: str, boxes: list[dict], w: int, h: int) -> tuple[str, str]:
+    """Pixelate manual boxes (fractions of the canvas) between from/to seconds. Returns (chain, out label)."""
+    chain, cur = "", label
+    for n, b in enumerate(boxes):
+        bw, bh = max(2, int(b["w"] * w) // 2 * 2), max(2, int(b["h"] * h) // 2 * 2)
+        bx, by = int(b["x"] * w), int(b["y"] * h)
+        end = f"{b['to']}" if b.get("to") is not None else "1e9"
+        chain += (f";[{cur}]split[m{n}a][m{n}b];[m{n}b]crop={bw}:{bh}:{bx}:{by},"
+                  f"scale=w=trunc(iw/12)+2:h=trunc(ih/12)+2,scale={bw}:{bh}:flags=neighbor,boxblur=4:1[m{n}c];"
+                  f"[m{n}a][m{n}c]overlay={bx}:{by}:enable='between(t,{b['from']},{end})'[mb{n}]")
+        cur = f"mb{n}"
+    return chain, cur
+
+
 def _ass_time(t: float) -> str:
     cs = int(round(t * 100))
     return f"{cs // 360000}:{cs // 6000 % 60:02d}:{cs // 100 % 60:02d}.{cs % 100:02d}"
@@ -149,13 +163,17 @@ def render(settings: Settings, conn, edl: EDL, *, keep_tmp: bool = False) -> Ren
 
     # --- 1. normalised segments ------------------------------------------
     parts, cues, t = [], [], 0.0
+    face_hits: dict[int, int] = {}
     for i, (seg, src, kind) in enumerate(sources, 1):
         length = seg.length(photo_s)
+        faces_on = edl.blur_faces if seg.blur_faces is None else seg.blur_faces
         out = tmp / f"seg{i:03d}.mkv"
         vfade = (f",fade=t=in:st=0:d={fade},fade=t=out:st={max(length - fade, 0):.3f}:d={fade}" if fade else "")
         if kind == "video":
             inputs = ["-ss", f"{seg.in_s or 0:.3f}", "-i", str(src), "-t", f"{length:.3f}"]
-            vchain = _frame_chain(seg.frame, W, H, seg.focus_x).replace("[v0]", f",fps={FPS},format=yuv420p{vfade}[v]")
+            bchain, blab = _blur_boxes_chain("v0", seg.blur, W, H)
+            vchain = (_frame_chain(seg.frame, W, H, seg.focus_x) + bchain
+                      + f";[{blab}]fps={FPS},format=yuv420p{vfade}[v]")
             has_audio = probe(src).acodec is not None
         else:
             from PIL import Image, ImageOps
@@ -164,6 +182,14 @@ def render(settings: Settings, conn, edl: EDL, *, keep_tmp: bool = False) -> Ren
             with Image.open(src) as im:
                 im = ImageOps.exif_transpose(im).convert("RGB")
                 im.thumbnail((W * 2, H * 2))
+                if faces_on:
+                    import numpy as np
+
+                    from app.media.privacy_blur import blur_faces_image
+
+                    arr = np.array(im)[:, :, ::-1].copy()
+                    face_hits[i] = blur_faces_image(arr)
+                    im = Image.fromarray(arr[:, :, ::-1])
                 im.save(still)
             frames = int(round(length * FPS))
             zp = (f"zoompan=z='1+({zoom}-1)*on/{max(frames - 1, 1)}':d=1:"
@@ -172,9 +198,11 @@ def render(settings: Settings, conn, edl: EDL, *, keep_tmp: bool = False) -> Ren
             if seg.frame == "cover":
                 vchain = (f"[0:v]scale={W * 2}:{H * 2}:force_original_aspect_ratio=increase,"
                           f"crop={W * 2}:{H * 2}:x='(iw-{W * 2})*{seg.focus_x}':y='(ih-{H * 2})/2',"
-                          f"{zp},setsar=1,format=yuv420p{vfade}[v]")
+                          f"{zp},setsar=1[v0]")
             else:
-                vchain = _frame_chain("fit", W, H, seg.focus_x).replace("[v0]", f",fps={FPS},format=yuv420p{vfade}[v]")
+                vchain = _frame_chain("fit", W, H, seg.focus_x)
+            bchain, blab = _blur_boxes_chain("v0", seg.blur, W, H)
+            vchain += bchain + f";[{blab}]fps={FPS},format=yuv420p{vfade}[v]"
             has_audio = False
         if has_audio and edl.audio == "ambient":
             achain = (f";[0:a]aresample=48000,aformat=channel_layouts=stereo,"
@@ -189,6 +217,13 @@ def render(settings: Settings, conn, edl: EDL, *, keep_tmp: bool = False) -> Ren
                "-map", "[v]", *amap, "-t", f"{length:.3f}", "-c:v", "libx264", "-preset", "veryfast",
                "-crf", "16", "-c:a", "pcm_s16le", "-map_metadata", "-1", str(out)]
         _run(cmd, cmds)
+        if faces_on and kind == "video":
+            from app.media.privacy_blur import blur_faces_video
+
+            blurred = tmp / f"seg{i:03d}_faces.mkv"
+            face_hits[i] = blur_faces_video(out, blurred, fps=FPS)
+            out.unlink()
+            blurred.rename(out)
         parts.append(out)
         if seg.caption:
             cues.append((t + 0.1, t + length - 0.1, seg.caption))
@@ -236,7 +271,10 @@ def render(settings: Settings, conn, edl: EDL, *, keep_tmp: bool = False) -> Ren
 
     manifest = safe_write_path(settings, folder / f"{edl.content_id}_v{version}.json")
     src_rows = [{"src": s.src, "in": s.in_s, "out": s.out_s, "duration": s.length(photo_s), "frame": s.frame,
-                 "focus_x": s.focus_x, "caption": s.caption} for s, _, _ in sources]
+                 "focus_x": s.focus_x, "caption": s.caption,
+                 "blur_faces": edl.blur_faces if s.blur_faces is None else s.blur_faces,
+                 "faces_blurred": face_hits.get(n, 0), "blur_boxes": len(s.blur)}
+                for n, (s, _, _) in enumerate(sources, 1)]
     with open_for_write(settings, manifest) as fh:
         json.dump({"content_id": edl.content_id, "version": version, "format": edl.format, "title": edl.title,
                    "video": final.name, "sha256": digest, "duration_s": out_info.duration_s,
@@ -270,7 +308,8 @@ def _write_review(settings, edl, folder, version, final, info, rows, warnings) -
 
     shot_rows = "".join(
         f"<tr><td>{i}</td><td>{html.escape(r['src'].rsplit('/', 1)[-1])}</td><td>{trim(r)}</td>"
-        f"<td>{r['duration']:.1f}s</td><td>{html.escape(r['frame'])}</td><td>{html.escape(r['caption'] or '')}</td></tr>"
+        f"<td>{r['duration']:.1f}s</td><td>{html.escape(r['frame'])}</td><td>{html.escape(r['caption'] or '')}</td>"
+        f"<td>{('faces ' if r['blur_faces'] else '') + (str(r['blur_boxes']) + ' box' if r['blur_boxes'] else '') or '-'}</td></tr>"
         for i, r in enumerate(rows, 1))
     warn = "".join(f"<li>{html.escape(w)}</li>" for w in warnings) or "<li>none</li>"
     checks = "".join(f"<li><label><input type='checkbox'> {html.escape(c)}</label></li>" for c in checklist)
@@ -293,7 +332,7 @@ table{{border-collapse:collapse;width:100%;font-size:13px}} td,th{{padding:4px 6
 <div class="card">
 <p>{info.width}×{info.height} · {info.duration_s:.1f}s · {html.escape(edl.format)} · metadata stripped</p>
 <h3>Shot list</h3>
-<table><tr><th>#</th><th>Source</th><th>Trim</th><th>Length</th><th>Frame</th><th>Caption</th></tr>{shot_rows}</table>
+<table><tr><th>#</th><th>Source</th><th>Trim</th><th>Length</th><th>Frame</th><th>Caption</th><th>Blur</th></tr>{shot_rows}</table>
 <h3>Warnings</h3><ul>{warn}</ul>
 <h3>Before approving</h3><ul style="list-style:none;padding:0">{checks}</ul>
 <p><small>To change the cut, edit <code>02_SELECTED_FOOTAGE/{html.escape(edl.series)}/{html.escape(edl.content_id)}/edl.yaml</code>

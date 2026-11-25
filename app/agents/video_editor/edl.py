@@ -44,6 +44,8 @@ class Segment:
     frame: str = "cover"
     focus_x: float = 0.5
     caption: str | None = None
+    blur_faces: bool | None = None
+    blur: list[dict] = field(default_factory=list)
 
     def length(self, default_photo_s: float) -> float:
         if self.in_s is not None and self.out_s is not None:
@@ -58,6 +60,7 @@ class EDL:
     format: str
     title: str = ""
     audio: str = "ambient"
+    blur_faces: bool = False
     segments: list[Segment] = field(default_factory=list)
     path: Path | None = None
 
@@ -82,6 +85,8 @@ def load_edl(path: Path | str) -> EDL:
             frame=s.get("frame", "cover"),
             focus_x=float(s.get("focus_x", 0.5)),
             caption=s.get("caption"),
+            blur_faces=s.get("blur_faces"),
+            blur=[_box(b, i) for b in (s.get("blur") or [])],
         )
         if seg.frame not in FRAMES:
             raise EDLError(f"segment {i}: frame must be one of {FRAMES}")
@@ -95,7 +100,22 @@ def load_edl(path: Path | str) -> EDL:
     if not segs:
         raise EDLError("EDL has no segments")
     return EDL(content_id=data["content_id"], series=data["series"], format=data["format"],
-               title=data.get("title", ""), audio=data.get("audio", "ambient"), segments=segs, path=path)
+               title=data.get("title", ""), audio=data.get("audio", "ambient"),
+               blur_faces=bool(data.get("blur_faces", False)), segments=segs, path=path)
+
+
+def _box(b: dict, i: int) -> dict:
+    try:
+        box = {k: float(b[k]) for k in ("x", "y", "w", "h")}
+    except (KeyError, TypeError, ValueError) as exc:
+        raise EDLError(f"segment {i}: blur box needs numeric x, y, w, h") from exc
+    if not all(0 <= box[k] <= 1 for k in box) or box["x"] + box["w"] > 1.001 or box["y"] + box["h"] > 1.001:
+        raise EDLError(f"segment {i}: blur box must sit inside the frame (fractions 0..1)")
+    if box["w"] <= 0 or box["h"] <= 0:
+        raise EDLError(f"segment {i}: blur box needs positive w and h")
+    box["from"] = float(b.get("from", 0))
+    box["to"] = float(b["to"]) if b.get("to") is not None else None
+    return box
 
 
 def _num(v) -> float | None:

@@ -15,6 +15,7 @@ Commands:
   hq approve ID         YOU approve: shows the privacy checklist, hashes the files, fills 07_READY_TO_PUBLISH
   hq reject ID --note "what to change"
   hq check ID           verify an approved package is unchanged (the publisher runs this)
+  hq privacy-scan VIDEO frame grid with detected faces, for a final check by eye
 """
 from __future__ import annotations
 
@@ -295,6 +296,21 @@ def cmd_check(args) -> int:
     return 0 if ok else 1
 
 
+def cmd_privacy_scan(args) -> int:
+    from app.agents.media_librarian.privacy_scan import scan_video
+
+    s = load_settings(args.root)
+    video = Path(args.video)
+    if not video.is_absolute() and not video.exists():
+        video = s.media_root / video
+    if not video.is_file():
+        print(f"Not found: {video}", file=sys.stderr)
+        return 1
+    out, n, faces = scan_video(s, video)
+    print(f"{n} frames checked, faces in {faces}. Open: {out}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hq", description="Harshad Media HQ")
     parser.add_argument("--root", help="project root (default: search upward from cwd)")
@@ -334,6 +350,9 @@ def build_parser() -> argparse.ArgumentParser:
     ck = sub.add_parser("check", help="verify an approval is still valid")
     ck.add_argument("id")
     ck.set_defaults(func=cmd_check)
+    ps = sub.add_parser("privacy-scan", help="frame grid with detected faces")
+    ps.add_argument("video")
+    ps.set_defaults(func=cmd_privacy_scan)
     return parser
 
 
