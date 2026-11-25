@@ -43,4 +43,4 @@ Stack: Python 3.11+, FFmpeg/ffprobe, SQLite, n8n (self-hosted), Claude via a con
 
 ## Status
 
-Foundation only (folders, docs, config templates). No agent is implemented yet. See `docs/ARCHITECTURE.md` §10 for the build order.
+Foundation + task 1 (core plumbing) done. No agent is implemented yet. Write files only via `app.core.paths.safe_write_path()` / `open_for_write()`. See `docs/ARCHITECTURE.md` §10 for the build order.
